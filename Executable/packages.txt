@@ -1,0 +1,4 @@
+pyinstaller==5.5
+pylint==2.15.4
+openpyxl==3.0.10
+doxygen-interface==0.0.1
