@@ -16,7 +16,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.styles.borders import Border, Side
 
-B_DEBUG = False
+B_DEBUG = True
 
 # Example and Debug Parameter
 I_YEAR = 2022
@@ -95,6 +95,13 @@ S_PERCENT_CONDITION = "<2019"
 S_PERCENT_1 = "68.3%"
 S_PERCENT_2 = "73.2%"
 
+F_MIN_REFUND = 470
+F_MAX_REFUND = 1097.67
+F_MIN_PAY = 186.96
+F_MIN_PAY_WITH_KTG = 193.56
+F_MIN_AV_REFUND = 43
+F_AV_LIMIT = 450
+
 F_KV = 14.6/100
 F_PV = 3.05/100
 F_PV_KL = 3.4/100
@@ -103,9 +110,9 @@ F_AV = 18.6/100
 F_DYN = 1 # dynamic factor
 
 I_DEFAULT_DAY = 25
-# Billing day in month before
+# Billing day for next month
 D_MONTH_BILLING_DATE = {
-   1:  22, # January
+   1:  I_DEFAULT_DAY, # January
    2:  I_DEFAULT_DAY, # February
    3:  I_DEFAULT_DAY, # March
    4:  I_DEFAULT_DAY, # April
@@ -116,7 +123,7 @@ D_MONTH_BILLING_DATE = {
    9:  I_DEFAULT_DAY, # September
    10: I_DEFAULT_DAY, # October
    11: I_DEFAULT_DAY, # November
-   12: I_DEFAULT_DAY  # December
+   12: 22  # December
 }
 
 I_HALF_MONTH_YEAR = 6
@@ -143,8 +150,7 @@ S_WJHSV_APPLICATION_NAME = "WJH-SV"
 S_WJHSV_DESCRIPTION = "Wirtschaftliche Jugendhilfe - Sozialversicherung"
 I_VERSION_NUM_1 = 1
 I_VERSION_NUM_2 = 0
-I_VERSION_NUM_3 = 0
-I_VERSION_NUM_4 = 0
+I_VERSION_NUM_3 = 1
 S_VERSION = str(I_VERSION_NUM_1) + '.' + str(I_VERSION_NUM_2) + '.' + str(I_VERSION_NUM_3)
 S_COPYRIGHT = "Copyright © 2022 Timo Unger"
 S_LICENSE = "GNU General Public License"
@@ -227,7 +233,9 @@ class SubsidyCalculator():
                             #print(cell.value)
                 else:
                     for i_cell, cell in enumerate(row):
-                        if i_cell in L_FLOAT_INX:
+                        if cell.value is None:
+                            l_data_row.append("")
+                        elif i_cell in L_FLOAT_INX:
                             l_data_row.append(float(cell.value))
                         elif i_cell in L_DATE_INX:
                             datetime_object = datetime.strptime(str(cell.value), '%Y-%m-%d %H:%M:%S')
@@ -274,7 +282,7 @@ class SubsidyCalculator():
         # sheet with subsidy 1.HJ
         ws_zu_1 = workbook.create_sheet(S_SHEET_ZU_1HJ)
         self.create_subsidy_sheet(ws_zu_1, i_year, True)
-        workbook.active = workbook[S_SHEET_ZU_1HJ]
+        #workbook.active = workbook[S_SHEET_ZU_1HJ]
         # sheet with subsidy 2.HJ
         ws_zu_2 = workbook.create_sheet(S_SHEET_ZU_2HJ)
         self.create_subsidy_sheet(ws_zu_2, i_year, False)
@@ -298,31 +306,25 @@ class SubsidyCalculator():
             i_entry_month = entry[Buchungsdatum].month
             i_entry_day = entry[Buchungsdatum].day
             if (entry[ZBNachname] == s_name) and (entry[ZBVorname] == s_first_name):
-                b_year_overflow = False
-                if i_entry_month == 12:
-                    i_lookup_month = 1
-                else:
-                    i_lookup_month = i_entry_month
-                if (i_entry_day < D_MONTH_BILLING_DATE[i_lookup_month]):
-                    i_real_month = i_entry_month
-                else:
-                    if i_entry_month == 12:
+                i_real_month = i_entry_month
+                i_real_year = i_entry_year
+                if (i_entry_day >= D_MONTH_BILLING_DATE[i_entry_month]):
+                    i_real_month += 1
+                    if i_real_month == 13:
                         i_real_month = 1
-                        b_year_overflow = True
-                    else:
-                        i_real_month = i_entry_month + 1
-                if ((not b_year_overflow) and (i_entry_year == i_year)) or ((b_year_overflow) and (i_entry_year + 1 == i_year)):
+                        i_real_year += 1
+                if i_real_year == i_year:
                     s_child = f"{entry[NameJM]}, {entry[VornameJM]}, {entry[OrtJM]}"
-                    if entry[Bezeichnung] not in L_SECOND_TABLE_KEYS:
-                        s_table_part = S_FIRST_TABLE_DICT
-                    else:
-                        s_table_part = S_SECOND_TABLE_DICT
+                    s_table_part = S_FIRST_TABLE_DICT
+                    for s_special in L_SECOND_TABLE_KEYS:
+                        if s_special.lower() in entry[Bezeichnung].lower():
+                            s_table_part = S_SECOND_TABLE_DICT
+                            break
                     if s_child not in d_data[s_table_part]:
                         d_data[s_table_part][s_child] = {}
-                    if i_real_month in d_data:
-                        d_data[s_table_part][s_child][i_real_month] = d_data[s_table_part][s_child][i_real_month] + entry[Betrag]
-                    else:
-                        d_data[s_table_part][s_child][i_real_month] = entry[Betrag]
+                    if i_real_month not in d_data[s_table_part][s_child]:
+                        d_data[s_table_part][s_child][i_real_month] = float(0)
+                    d_data[s_table_part][s_child][i_real_month] += entry[Betrag]
         return d_data
 
     def create_calculation_sheet(self, ws, d_data, i_year, s_name, s_first_name, b_first_half_year = True):
@@ -339,7 +341,7 @@ class SubsidyCalculator():
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
         ws.page_setup.scale = 70 # in percent TODO try auto scale
         # set row high
-        l_row_high = [22.43, 22.72, 5] + ([12.29] * 7)
+        l_row_high = [30, 25, 5] + ([13] * 6) + [16]
         for i, f_row_width in enumerate(l_row_high, start=1):
             ws.column_dimensions[get_column_letter(i)].width = f_row_width * F_SCALE_FACTOR
         # set data
@@ -500,7 +502,6 @@ class SubsidyCalculator():
         self.set_cell(ws, 'C4', "PV =", align='right', i_font_size = 10)
         self.set_cell(ws, 'D4', F_PV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, 'E4', "=(B6*D4)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'F4', f"(kinderlos {F_PV_KL:0.1%})", i_font_size = 6)
         self.set_cell(ws, 'C5', "Zusatzbeitrag =", align='right', i_font_size = 10)
         self.set_cell(ws, 'D5', F_ZU, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, 'E5', "=(B6*D5)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
@@ -511,7 +512,7 @@ class SubsidyCalculator():
         self.set_cell(ws, 'A9', "aus Beitragsbescheid Krankenkasse:", align='right', i_font_size = 10)
         self.set_cell(ws, 'B9', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
         self.set_cell(ws, 'A10', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B10', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
+        self.set_cell(ws, 'B10', f"=IF(AND(B5>={F_MIN_REFUND},B5<={F_MAX_REFUND}),MIN({F_MIN_PAY}/2,B9/2),IF(B9>D6,D6/2,B9/2))", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, 'C10', "Anzahl Monate:", align='right', i_font_size = 10)
         self.set_cell(ws, 'D10', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
         self.set_cell(ws, 'A11', "davon für KV:", align='right', i_font_size = 10)
@@ -523,11 +524,11 @@ class SubsidyCalculator():
         self.set_cell(ws, 'B14', "=B10*D10", b_bold=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=DOUBLE_UNDERLINED_BORDER)
 
         self.set_cell(ws, 'A16', "Hinweise:", b_bold=True, b_underline=True, i_font_size=10)
-        l_text = ["> keine Versicherungspflicht bei einem zu versteuerndem EK unter 470 €.",
-                  "> immer Mindestbeitrag zwischen 470 € und 1.096,67 € (zu versteuerndem EK).",
-                  "> Mindestbeitrag KV ohne Krankentagegeldversicherung: 14,0% = mindestens 186,98 € (inkl. PV)",
-                  f"> Mindestbeitrag KV mit Krankentagegeldversicherung: {F_KV:.0%} = mindestens 193,56 € (inkl. PV)",
-                  f"> pflichtversichert über einem EK von 1.096,67 €  (KV = {F_KV:.0%} und PV = {F_PV:.0%}).",
+        l_text = [f"> keine Versicherungspflicht bei einem zu versteuerndem EK unter {F_MIN_REFUND} €.",
+                  f"> immer Mindestbeitrag zwischen {F_MIN_REFUND} € und {F_MAX_REFUND} € (zu versteuerndem EK).",
+                  f"> Mindestbeitrag KV ohne Krankentagegeldversicherung: 14,0% = mindestens {F_MIN_PAY} € (inkl. PV)",
+                  f"> Mindestbeitrag KV mit Krankentagegeldversicherung: {F_KV:.1%} = mindestens {F_MIN_PAY_WITH_KTG} € (inkl. PV)",
+                  f"> pflichtversichert über einem EK von {F_MAX_REFUND} €  (KV = {F_KV:.1%} und PV = {F_PV:.2%} bzw. {F_PV_KL:.2%} bei kinderlos).",
                   "(1) liegt der KK ein Steuerbescheid bspw. für Jahr 2018 vor, ermittelt sie auf dieser Grundlage die Beiträge.",
                   "Das Pflegegeld aus dem Jahr 2018 ist dann für die Berechnung der Erstattung heranzuziehen."]
         for i, s_text in enumerate(l_text):
@@ -551,22 +552,22 @@ class SubsidyCalculator():
         self.set_cell(ws, 'D28', F_AV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, 'E28', "=(B31*D28)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, 'C29', "dyn. Faktor =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D29', F_DYN, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, 'D29', F_DYN, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER)
         ws.merge_cells(start_row=29, start_column=4, end_row=29, end_column=5)
 
         self.set_cell(ws, 'A34', "aus Beitragsbescheid Rentenversicherung:", align='right', i_font_size = 10)
         self.set_cell(ws, 'B34', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
         self.set_cell(ws, 'A35', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B35', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
+        self.set_cell(ws, 'B35', f"=MIN(MAX(IF(B34>E28,E28/2,B34/2),{F_MIN_AV_REFUND}),B34/2)",fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
         self.set_cell(ws, 'C35', "Anzahl Monate:", align='right', i_font_size = 10)
         self.set_cell(ws, 'D35', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
 
         self.set_cell(ws, 'A37', "Insgesamt werden erstattet:", b_bold=True, align='right', i_font_size = 10)
         self.set_cell(ws, 'B37', "=B35*D36", b_bold=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=DOUBLE_UNDERLINED_BORDER)
         self.set_cell(ws, 'A39', "Hinweise:", b_bold=True, b_underline=True, i_font_size=10)
-        l_text = ["> nicht Versicherungspflichtig bei einem zu versteuerndem EK unter 450 €.",
-                  "> kann aber auf Nachweis mit maximal 43 € gefördert werden.",
-                  "> versicherungspflichtig bei einem EK über 450 €.",
+        l_text = [f"> nicht Versicherungspflichtig bei einem zu versteuerndem EK unter {F_AV_LIMIT} €.",
+                  f"> kann aber auf Nachweis mit maximal {F_MIN_AV_REFUND} € gefördert werden.",
+                  f"> versicherungspflichtig bei einem EK über {F_AV_LIMIT} €.",
                   "(1) liegt der RV ein Steuerbescheid bspw. für Jahr 2018 vor, ermittelt sie auf seiner Grundlage die Beiträge.",
                   "Das Pflegegeld des gleichen Jahres 2018 ist dann für die Berechnung der Erstattung heranzuziehen."]
         for i, s_text in enumerate(l_text):
