@@ -190,6 +190,7 @@ class SubsidyCalculator():
                     if not os.path.exists(s_output_folder):
                         os.makedirs(s_output_folder)
                 for l_user_data in l_user:
+                    #if not B_DEBUG or l_user_data[0] == "Unger" and l_user_data[1] == "Tamara":
                     self.create_report_file(s_output_folder, l_table, i_year, l_user_data[0], l_user_data[1])
                 print("Finished!")
             else:
@@ -230,7 +231,6 @@ class SubsidyCalculator():
                         l_header = []
                         for cell in row:
                             l_header.append(str(cell.value))
-                            #print(cell.value)
                 else:
                     for i_cell, cell in enumerate(row):
                         if cell.value is None:
@@ -375,8 +375,10 @@ class SubsidyCalculator():
         """
         if b_first_half_year:
             i_year_offset = 0
+            l_valid_months = list(range(1, I_HALF_MONTH_YEAR+1))
         else:
             i_year_offset = I_HALF_MONTH_YEAR
+            l_valid_months = list(range(I_HALF_MONTH_YEAR+1, (I_HALF_MONTH_YEAR*2)+1))
         if b_normal_table:
             i_offset = I_TABLE_OFFSET_TOP
             s_table_part = S_FIRST_TABLE_DICT
@@ -388,8 +390,12 @@ class SubsidyCalculator():
         self.set_cell(ws, 'J' + str(i_offset+3), "Gesamt", b_bold=True, align='center')
         self.set_cell(ws, 'A' + str(i_offset+4), "Betreute Kinder", b_bold=True)
         self.set_cell(ws, 'B' + str(i_offset+4), "Wohnort", b_bold=True)
+        d_filtered_user_data = {}
+        for i, s_child in enumerate(d_data[s_table_part]): # filter to sort out user only for other half year
+            if any(key in d_data[s_table_part][s_child] for key in l_valid_months):
+                d_filtered_user_data[s_child] = d_data[s_table_part][s_child]
         i_row = 0
-        for i, s_child in enumerate(d_data[s_table_part]):
+        for i, s_child in enumerate(d_filtered_user_data):
             i_row = i
             i_index = s_child.rfind(',')
             self.set_cell(ws, 'A' + str(i_offset+I_CHILD_OFFSET+i), s_child[:i_index], fill_color=COLOR_LIGHTGREEN)
@@ -397,14 +403,14 @@ class SubsidyCalculator():
             self.set_cell(ws, 'C' + str(i_offset+I_CHILD_OFFSET+i), fill_color=COLOR_GREY)
             for i_month in range(I_HALF_MONTH_YEAR):
                 i_real_month = i_year_offset + i_month + 1
-                if i_real_month in d_data[s_table_part][s_child]:
-                    f_sum = d_data[s_table_part][s_child][i_real_month]
+                if i_real_month in d_filtered_user_data[s_child]:
+                    f_sum = d_filtered_user_data[s_child][i_real_month]
                 else:
                     f_sum = 0
                 s_cell = get_column_letter(i_month + I_MONTH_COLUMN_OFFSET) + str(i_offset+I_CHILD_OFFSET+i)
                 self.set_cell(ws, s_cell, f_sum, fill_color=COLOR_LIGHTORANGE)
                 ws[s_cell].number_format = S_EUR_FORMAT
-        if d_data[s_table_part]:
+        if d_filtered_user_data:
             s_start_row = i_row + 1
         else:
             s_start_row = i_row
@@ -473,7 +479,8 @@ class SubsidyCalculator():
         """
         ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
-        ws.page_setup.scale = 90 # in percent TODO try auto scale
+        ws.page_setup.scale = 88 # in percent TODO try auto scale
+        ws.sheet_properties.outlinePr.summaryBelow = False
         # set row high
         l_row_high = [37.57, 11.14, 16, 7, 11.71]
         for i, f_row_width in enumerate(l_row_high, start=1):
@@ -487,43 +494,22 @@ class SubsidyCalculator():
             s_part_year = "2"
         self.set_cell(ws, 'A1', f"Berechnung für Kranken- und Pflegeversicherung (KV, PV) - {s_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
-        self.set_cell(ws, 'A3', "maßgebl. Jahr der Beitragsbemessung(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B3', i_year, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER) # TODO individuell ausfüllen wenn Tagespflege Liste besteht (anhand letztem Steuerbescheid)
-        self.set_cell(ws, 'A4', "durchschn. mtl. Pflegegeld(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B4', f"='{s_ek_name}'!J19", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'A5', "steuerpflichtiges Einkommen aus TP(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B5', f"=IF(B3{S_PERCENT_CONDITION}, B4*{S_PERCENT_1}, B4*{S_PERCENT_2})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'A6', "zu berücksichtigendes Einkommen aus TP(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B6', f"='{s_ek_name}'!J41", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        i_table_offset = 11
+        i_start_offset = 2
+        i_offset = 0
+        self.create_subsidy_kp_part(ws, i_year, s_ek_name, i_offset)
+        i_offset += i_table_offset
+        self.create_subsidy_kp_part(ws, i_year, s_ek_name, i_offset)
+        i_offset += i_table_offset
+        self.create_subsidy_kp_part(ws, i_year, s_ek_name, i_offset)
+        ws.row_dimensions.group(3, hidden=True)
+        ws.row_dimensions.group(i_start_offset+i_table_offset, i_start_offset+(3*i_table_offset)-1, hidden=True, outline_level=1)
+        ws.row_dimensions.group(i_start_offset+(2*i_table_offset), i_start_offset+(3*i_table_offset)-1, hidden=True, outline_level=2)
 
-        self.set_cell(ws, 'C3', "KV =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D3', F_KV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'E3', "=(B6*D3)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'C4', "PV =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D4', F_PV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'E4', "=(B6*D4)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'C5', "Zusatzbeitrag =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D5', F_ZU, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'E5', "=(B6*D5)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'C6', "Gesamt =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D6', "=SUM(E3:E5)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        ws.merge_cells(start_row=6, start_column=4, end_row=6, end_column=5)
-
-        self.set_cell(ws, 'A9', "aus Beitragsbescheid Krankenkasse:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B9', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
-        self.set_cell(ws, 'A10', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B10', f"=IF(AND(B5>={F_MIN_REFUND},B5<={F_MAX_REFUND}),MIN({F_MIN_PAY}/2,B9/2),IF(B9>D6,D6/2,B9/2))", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'C10', "Anzahl Monate:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D10', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
-        self.set_cell(ws, 'A11', "davon für KV:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B11', "=B10/(D3+D4+D5)*(D3+D5)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'A12', "davon für PV:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B12', "=B10/(D3+D5+D4)*D4", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-
-        self.set_cell(ws, 'A14', "Insgesamt werden erstattet:", b_bold=True, align='right', i_font_size = 10)
-        self.set_cell(ws, 'B14', "=B10*D10", b_bold=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=DOUBLE_UNDERLINED_BORDER)
-
-        self.set_cell(ws, 'A16', "Hinweise:", b_bold=True, b_underline=True, i_font_size=10)
+        self.set_cell(ws, f'A{14+i_offset}', "Insgesamt werden erstattet:", b_bold=True, align='right', i_font_size = 10)
+        i_total_row = 10
+        self.set_cell(ws, f'B{14+i_offset}', f"=((B{i_total_row}*D{i_total_row})+(B{i_total_row+i_table_offset}*D{i_total_row+i_table_offset})+(B{i_total_row+(2*i_table_offset)}*D{i_total_row+(2*i_table_offset)}))", b_bold=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=DOUBLE_UNDERLINED_BORDER)
+        self.set_cell(ws, f'A{16+i_offset}', "Hinweise:", b_bold=True, b_underline=True, i_font_size=10)
         l_text = [f"> keine Versicherungspflicht bei einem zu versteuerndem EK unter {F_MIN_REFUND} €.",
                   f"> immer Mindestbeitrag zwischen {F_MIN_REFUND} € und {F_MAX_REFUND} € (zu versteuerndem EK).",
                   f"> Mindestbeitrag KV ohne Krankentagegeldversicherung: 14,0% = mindestens {F_MIN_PAY} € (inkl. PV)",
@@ -532,59 +518,122 @@ class SubsidyCalculator():
                   "(1) liegt der KK ein Steuerbescheid bspw. für Jahr 2018 vor, ermittelt sie auf dieser Grundlage die Beiträge.",
                   "Das Pflegegeld aus dem Jahr 2018 ist dann für die Berechnung der Erstattung heranzuziehen."]
         for i, s_text in enumerate(l_text):
-            self.set_cell(ws, 'A' + str(17+i), s_text, i_font_size=10)
+            self.set_cell(ws, f'A{17+i+i_offset}', s_text, i_font_size=10)
 
-        self.set_cell(ws, 'A25', f"Berechnung für Altersvorsorge (AV) - {s_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
-        ws.merge_cells(start_row=25, start_column=1, end_row=25, end_column=5)
-        self.set_cell(ws, 'A27', "maßgebl. Jahr der Beitragsbemessung(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B27', i_year, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER) # TODO individuell ausfüllen wenn Tagespflege Liste besteht (anhand letztem Steuerbescheid)
-        self.set_cell(ws, 'A28', "durchschn. mtl. Pflegegeld(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B28', f"='{s_ek_name}'!J19", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'A29', "dynamisiert:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B29', "=B28*D29", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'A30', "steuerpflichtiges Einkommen aus TP(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B30', f"=IF(B27{S_PERCENT_CONDITION}, B29*{S_PERCENT_1}, B29*{S_PERCENT_2})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'A{25+i_offset}', f"Berechnung für Altersvorsorge (AV) - {s_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
+        ws.merge_cells(start_row=(25+i_offset), start_column=1, end_row=(25+i_offset), end_column=5)
+        i_table_offset = 10
+        i_start_offset = 58
+        self.create_subsidy_av_part(ws, i_year, s_ek_name, i_offset)
+        i_offset += i_table_offset
+        self.create_subsidy_av_part(ws, i_year, s_ek_name, i_offset)
+        i_offset += i_table_offset
+        self.create_subsidy_av_part(ws, i_year, s_ek_name, i_offset)
+        ws.row_dimensions.group(49, hidden=True)
+        ws.row_dimensions.group(i_start_offset, i_start_offset+(2*i_table_offset)-1, hidden=True, outline_level=1)
+        ws.row_dimensions.group(i_start_offset+i_table_offset, i_start_offset+(2*i_table_offset)-1, hidden=True, outline_level=2)
 
-        self.set_cell(ws, 'A31', "zu berücksichtigendes Einkommen(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B31', f"=(('{s_ek_name}'!J39*D29)+B30)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-
-        self.set_cell(ws, 'C28', "AV =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D28', F_AV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'E28', "=(B31*D28)", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
-        self.set_cell(ws, 'C29', "dyn. Faktor =", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D29', F_DYN, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER)
-        ws.merge_cells(start_row=29, start_column=4, end_row=29, end_column=5)
-
-        self.set_cell(ws, 'A34', "aus Beitragsbescheid Rentenversicherung:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B34', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
-        self.set_cell(ws, 'A35', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'B35', f"=MIN(MAX(IF(B34>E28,E28/2,B34/2),{F_MIN_AV_REFUND}),B34/2)",fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
-        self.set_cell(ws, 'C35', "Anzahl Monate:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'D35', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
-
-        self.set_cell(ws, 'A37', "Insgesamt werden erstattet:", b_bold=True, align='right', i_font_size = 10)
-        self.set_cell(ws, 'B37', "=B35*D36", b_bold=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=DOUBLE_UNDERLINED_BORDER)
-        self.set_cell(ws, 'A39', "Hinweise:", b_bold=True, b_underline=True, i_font_size=10)
+        self.set_cell(ws, f'A{37+i_offset}', "Insgesamt werden erstattet:", b_bold=True, align='right', i_font_size = 10)
+        i_total_row = 57
+        self.set_cell(ws, f'B{37+i_offset}', f"=((B{i_total_row}*D{i_total_row})+(B{i_total_row+i_table_offset}*D{i_total_row+i_table_offset})+(B{i_total_row+(2*i_table_offset)}*D{i_total_row+(2*i_table_offset)}))", b_bold=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=DOUBLE_UNDERLINED_BORDER)
+        self.set_cell(ws, f'A{39+i_offset}', "Hinweise:", b_bold=True, b_underline=True, i_font_size=10)
         l_text = [f"> nicht Versicherungspflichtig bei einem zu versteuerndem EK unter {F_AV_LIMIT} €.",
                   f"> kann aber auf Nachweis mit maximal {F_MIN_AV_REFUND} € gefördert werden.",
                   f"> versicherungspflichtig bei einem EK über {F_AV_LIMIT} €.",
                   "(1) liegt der RV ein Steuerbescheid bspw. für Jahr 2018 vor, ermittelt sie auf seiner Grundlage die Beiträge.",
                   "Das Pflegegeld des gleichen Jahres 2018 ist dann für die Berechnung der Erstattung heranzuziehen."]
         for i, s_text in enumerate(l_text):
-            self.set_cell(ws, 'A' + str(40+i), s_text, i_font_size=10)
+            self.set_cell(ws, f'A{40+i+i_offset}', s_text, i_font_size=10)
 
-        self.set_cell(ws, 'A46', "Unfallversicherung (UV)", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
-        ws.merge_cells(start_row=46, start_column=1, end_row=46, end_column=5)
-        self.set_cell(ws, 'B48', "Jahr:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'C48', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
-        self.set_cell(ws, 'B50', "Betrag:", align='right', i_font_size = 10)
-        self.set_cell(ws, 'C50', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
+        self.set_cell(ws, f'A{46+i_offset}', "Unfallversicherung (UV)", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
+        ws.merge_cells(start_row=46+i_offset, start_column=1, end_row=46+i_offset, end_column=5)
+        self.set_cell(ws, f'B{48+i_offset}', "Jahr:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'C{48+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
+        self.set_cell(ws, f'B{50+i_offset}', "Betrag:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'C{50+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
 
-        self.set_cell(ws, 'A53', "Erstattung 1. Halbjahr:", b_bold=True, b_italic=True, b_underline=True, i_font_size = 14, fill_color=COLOR_GREY)
-        self.set_cell(ws, 'B53', fill_color=COLOR_GREY, b_bold=True, b_italic=True, i_font_size = 14)
-        self.set_cell(ws, 'C53', "=B14+B37+C50", b_bold=True, b_italic=True, b_underline=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 14)
-        self.set_cell(ws, 'D53', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
-        self.set_cell(ws, 'E53', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
+        self.set_cell(ws, f'A{53+i_offset}', f"Erstattung {s_part_year}. Halbjahr:", b_bold=True, b_italic=True, b_underline=True, i_font_size = 14, fill_color=COLOR_GREY)
+        self.set_cell(ws, f'B{53+i_offset}', fill_color=COLOR_GREY, b_bold=True, b_italic=True, i_font_size = 14)
+        self.set_cell(ws, f'C{53+i_offset}', "=B36+B79+C92", b_bold=True, b_italic=True, b_underline=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 14)
+        self.set_cell(ws, f'D{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
+        self.set_cell(ws, f'E{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
+        
+    def create_subsidy_kp_part(self, ws, i_year, s_ek_name, i_offset):
+        """!
+        @brief Create subsidy sheet
+        @param ws : actual worksheet
+        @param i_year : required year
+        @param s_ek_name : ek sheet name
+        @param i_offset : cell offset
+        """
+        self.set_cell(ws, f'A{3+i_offset}', f"ab 01.01.{i_year}", i_font_size = 10)
+        self.set_cell(ws, f'A{4+i_offset}', "maßgebl. Jahr der Beitragsbemessung(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{4+i_offset}', i_year, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER) # TODO individuell ausfüllen wenn Tagespflege Liste besteht (anhand letztem Steuerbescheid)
+        self.set_cell(ws, f'A{5+i_offset}', "durchschn. mtl. Pflegegeld(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{5+i_offset}', f"='{s_ek_name}'!J19", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'A{6+i_offset}', "steuerpflichtiges Einkommen aus TP(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{6+i_offset}', f"=IF(B{4+i_offset}{S_PERCENT_CONDITION}, B{5+i_offset}*{S_PERCENT_1}, B{5+i_offset}*{S_PERCENT_2})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'A{7+i_offset}', "zu berücksichtigendes Einkommen aus TP(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{7+i_offset}', f"='{s_ek_name}'!J41", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+
+        self.set_cell(ws, f'C{4+i_offset}', "KV =", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{4+i_offset}', F_KV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'E{4+i_offset}', f"=(B{7+i_offset}*D{4+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'C{5+i_offset}', "PV =", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{5+i_offset}', F_PV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'E{5+i_offset}', f"=(B{7+i_offset}*D{5+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'C{6+i_offset}', "Zusatzbeitrag =", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{6+i_offset}', F_ZU, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'E{6+i_offset}', f"=(B{7+i_offset}*D{6+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'C{7+i_offset}', "Gesamt =", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{7+i_offset}', f"=SUM(E{4+i_offset}:E{6+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        ws.merge_cells(start_row=(7+i_offset), start_column=4, end_row=(7+i_offset), end_column=5)
+
+        self.set_cell(ws, f'A{9+i_offset}', "aus Beitragsbescheid Krankenkasse:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{9+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
+        self.set_cell(ws, f'A{10+i_offset}', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{10+i_offset}', f"=IF(AND(B{6+i_offset}>={F_MIN_REFUND},B{6+i_offset}<={F_MAX_REFUND}),MIN({F_MIN_PAY}/2,B{9+i_offset}/2),IF(B{9+i_offset}>D{7+i_offset},D{7+i_offset}/2,B{9+i_offset}/2))", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'C{10+i_offset}', "Anzahl Monate:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{10+i_offset}', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
+        self.set_cell(ws, f'A{11+i_offset}', "davon für KV:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{11+i_offset}', f"=B{10+i_offset}/(D{4+i_offset}+D{5+i_offset}+D{6+i_offset})*(D{4+i_offset}+D{6+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'A{12+i_offset}', "davon für PV:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{12+i_offset}', f"=B{10+i_offset}/(D{4+i_offset}+D{6+i_offset}+D{5+i_offset})*D{5+i_offset}", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+
+    def create_subsidy_av_part(self, ws, i_year, s_ek_name, i_offset):
+        """!
+        @brief Create subsidy sheet
+        @param ws : actual worksheet
+        @param i_year : required year
+        @param s_ek_name : ek sheet name
+        @param i_offset : cell offset
+        """
+        self.set_cell(ws, f'A{27+i_offset}', f"ab 01.01.{i_year}", i_font_size = 10)
+        self.set_cell(ws, f'A{28+i_offset}', "maßgebl. Jahr der Beitragsbemessung(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{28+i_offset}', i_year, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER) # TODO individuell ausfüllen wenn Tagespflege Liste besteht (anhand letztem Steuerbescheid)
+        self.set_cell(ws, f'A{29+i_offset}', "durchschn. mtl. Pflegegeld(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{29+i_offset}', f"='{s_ek_name}'!J19", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'A{30+i_offset}', "dynamisiert:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{30+i_offset}', f"=B{29+i_offset}*D{30+i_offset}", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'A{31+i_offset}', "steuerpflichtiges Einkommen aus TP(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{31+i_offset}', f"=IF(B{28+i_offset}{S_PERCENT_CONDITION}, B{30+i_offset}*{S_PERCENT_1}, B{30+i_offset}*{S_PERCENT_2})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+
+        self.set_cell(ws, f'A{32+i_offset}', "zu berücksichtigendes Einkommen(1):", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{32+i_offset}', f"=(('{s_ek_name}'!J39*D{30+i_offset})+B{30+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+
+        self.set_cell(ws, f'C{29+i_offset}', "AV =", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{29+i_offset}', F_AV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'E{29+i_offset}', f"=(B{32+i_offset}*D{29+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'C{30+i_offset}', "dyn. Faktor =", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{30+i_offset}', F_DYN, fill_color=COLOR_GREY, i_font_size = 10, s_border=THIN_BORDER)
+        ws.merge_cells(start_row=30+i_offset, start_column=4, end_row=30+i_offset, end_column=5)
+
+        self.set_cell(ws, f'A{34+i_offset}', "aus Beitragsbescheid Rentenversicherung:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{34+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
+        self.set_cell(ws, f'A{35+i_offset}', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'B{35+i_offset}', f"=MIN(MAX(IF(B{34+i_offset}>E{29+i_offset},E{29+i_offset}/2,B{34+i_offset}/2),{F_MIN_AV_REFUND}),B{34+i_offset}/2)",fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
+        self.set_cell(ws, f'C{35+i_offset}', "Anzahl Monate:", align='right', i_font_size = 10)
+        self.set_cell(ws, f'D{35+i_offset}', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
 
     def set_cell(self, ws, s_cell, value = None, b_bold = False, b_italic=False, b_underline = False, i_font_size = 12, s_font = 'Arial', fill_color = None, align = None, s_format = None, s_border = None):
         """!
