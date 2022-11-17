@@ -16,7 +16,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.styles.borders import Border, Side
 
-B_DEBUG = True
+B_DEBUG = False
 
 # Example and Debug Parameter
 I_YEAR = 2022
@@ -151,7 +151,8 @@ S_WJHSV_DESCRIPTION = "Wirtschaftliche Jugendhilfe - Sozialversicherung"
 I_VERSION_NUM_1 = 1
 I_VERSION_NUM_2 = 0
 I_VERSION_NUM_3 = 1
-S_VERSION = str(I_VERSION_NUM_1) + '.' + str(I_VERSION_NUM_2) + '.' + str(I_VERSION_NUM_3)
+I_VERSION_NUM_4 = 0
+S_VERSION = f"{I_VERSION_NUM_1}.{I_VERSION_NUM_2}.{I_VERSION_NUM_3}"
 S_COPYRIGHT = "Copyright © 2022 Timo Unger"
 S_LICENSE = "GNU General Public License"
 S_HOME = "https://timounger.github.io/WJH-SV"
@@ -557,7 +558,7 @@ class SubsidyCalculator():
         self.set_cell(ws, f'C{53+i_offset}', "=B36+B79+C92", b_bold=True, b_italic=True, b_underline=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 14)
         self.set_cell(ws, f'D{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
         self.set_cell(ws, f'E{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
-        
+
     def create_subsidy_kp_part(self, ws, i_year, s_ek_name, i_offset):
         """!
         @brief Create subsidy sheet
