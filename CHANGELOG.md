@@ -11,6 +11,7 @@
 * Zuschussbrechung mit unterschiedlichen Prozentsätzen möglichen (aufklappen wenn benötigt)
 * Kinder mit leeren Einträgen werden nicht aufgelistet
 * EK-Berechnung (1. HJ) als aktive Seite (wird beim Öffnen gezeigt)
+* Text Ausgabe in Kommandozeiel bei Verwendung der Executable
 
 ## [v1.0.0]
 
