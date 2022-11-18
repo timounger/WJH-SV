@@ -1,6 +1,6 @@
 \page CONTRIBUTING Contributing
 
-[TOC]
+[[_TOC_]]
 
 ## Architektur 🏭️
 

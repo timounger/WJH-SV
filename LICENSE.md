@@ -1,6 +1,6 @@
 \page LICENSE License
 
-[TOC]
+[[_TOC_]]
 
 Describes the terms under which WJH-SV is distributed.
 A copy of the GNU GPL is appended to this file.

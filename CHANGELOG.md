@@ -1,6 +1,6 @@
 \page CHANGELOG Changelog
 
-[TOC]
+[[_TOC_]]
 
 # WJH-SV changelog 📋️
 

@@ -1,6 +1,6 @@
 \mainpage WJH-SV
 
-[TOC]
+[[_TOC_]]
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/timounger/WJH-SV)](https://github.com/timounger/WJH-SV/releases/latest)
 [![GitHub](https://img.shields.io/github/license/timounger/WJH-SV)](https://github.com/timounger/WJH-SV/blob/main/LICENSE)
