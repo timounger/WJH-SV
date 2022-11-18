@@ -16,7 +16,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.styles.borders import Border, Side
 
-B_DEBUG = False
+B_DEBUG = True
 
 # Example and Debug Parameter
 I_YEAR = 2022
@@ -148,11 +148,11 @@ F_SCALE_FACTOR = 22.43/21.71
 # App Data
 S_WJHSV_APPLICATION_NAME = "WJH-SV"
 S_WJHSV_DESCRIPTION = "Wirtschaftliche Jugendhilfe - Sozialversicherung"
-I_VERSION_NUM_1 = 1
-I_VERSION_NUM_2 = 0
-I_VERSION_NUM_3 = 1
-I_VERSION_NUM_4 = 0
-S_VERSION = f"{I_VERSION_NUM_1}.{I_VERSION_NUM_2}.{I_VERSION_NUM_3}"
+I_VERSION_MAJOR = 1 # major changes/breaks at API (e.g incombatability)
+I_VERSION_MINOR = 0 # minor changes/does not break the API (e.g new feature)
+I_VERSION_PATCH = 1 # Bug fixes
+I_VERSION_BUILD = 0 # build number (if available)
+S_VERSION = f"{I_VERSION_MAJOR}.{I_VERSION_MINOR}.{I_VERSION_PATCH}"
 S_COPYRIGHT = "Copyright © 2022 Timo Unger"
 S_LICENSE = "GNU General Public License"
 S_HOME = "https://timounger.github.io/WJH-SV"
@@ -348,9 +348,9 @@ class SubsidyCalculator():
         # set data
         self.create_calculation_header(ws, i_year, s_name, s_first_name)
         self.create_calculation_table(ws, d_data, b_first_half_year, True)
-        self.create_calculation_sum(ws, True)
+        self.create_calculation_sum(ws, b_first_half_year, True)
         self.create_calculation_table(ws, d_data, b_first_half_year, False)
-        self.create_calculation_sum(ws, False)
+        self.create_calculation_sum(ws, b_first_half_year, False)
 
     def create_calculation_header(self, ws, i_year, s_name, s_first_name):
         """!
@@ -432,15 +432,20 @@ class SubsidyCalculator():
                 s_cell = get_column_letter(i_colum + 1) + str(i_offset+3+i_row)
                 ws[s_cell].border = THIN_BORDER
 
-    def create_calculation_sum(self, ws, b_normal_table = True):
+    def create_calculation_sum(self, ws, b_first_half_year, b_normal_table = True):
         """!
         @brief Create sum in calculation sheet
         @param ws : actual worksheet
+        @param b_first_half_year : [True] first half year; [False] second half year
         @param b_normal_table : [True] normal table; [False] special table
         """
+        if b_first_half_year:
+            s_part_year = "1"
+        else:
+            s_part_year = "2"
         if b_normal_table:
             i_offset = I_TABLE_OFFSET_TOP
-            s_text_1 = 'Gesamtsumme Pflegegeld 1. Halbjahr ='
+            s_text_1 = f'Gesamtsumme Pflegegeld {b_first_half_year}. Halbjahr ='
             s_text_2 = 'durchschnittliches reguläres Pflegegeld mtl. ='
             s_text_3 = 'steuerpflichtiges Einkommen ='
             s_formula = f'=IF(G1{S_PERCENT_CONDITION}, J19*{S_PERCENT_1}, J19*{S_PERCENT_2})'
@@ -449,7 +454,7 @@ class SubsidyCalculator():
             border = DOUBLE_UNDERLINED_BORDER
         else:
             i_offset = I_TABLE_OFFSET_BOTTOM
-            s_text_1 = 'Gesamtsumme erhöhter Förderbedarf/Vertretung/außergewöhnliche Betreuungszeiten 1. Halbjahr ='
+            s_text_1 = f'Gesamtsumme erhöhter Förderbedarf/Vertretung/außergewöhnliche Betreuungszeiten {b_first_half_year}. Halbjahr ='
             s_text_2 = 'durchschnittliches zusätzliches Pflegegeld mtl. ='
             s_text_3 = 'zu berücksichtigendes Einkommen = '
             s_formula = '=J39+J21'
@@ -458,7 +463,7 @@ class SubsidyCalculator():
             border = DOUBLE_BORDER
         self.set_cell(ws, s_column + str(i_offset+18), s_text_1, b_bold=True, align='right')
         ws.merge_cells(start_row=i_offset+18, start_column=i_merge_start, end_row=i_offset+18, end_column=9)
-        self.set_cell(ws, 'J' + str(i_offset+18), f'=SUM(J{str(i_offset+I_CHILD_OFFSET)}:J{str(i_offset+I_CHILD_OFFSET + I_MAX_CHILDS - 1)})', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT)
+        self.set_cell(ws, 'J' + str(i_offset+18), f'=SUM(J{i_offset+I_CHILD_OFFSET}:J{i_offset+I_CHILD_OFFSET+I_MAX_CHILDS-1})', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT)
         if b_normal_table:
             s_month_count_formula = "=SUM(IF(SUM(D5:D16,D25:D36)<>0,1,0)+IF(SUM(E5:E16,E25:E36)<>0,1,0)+IF(SUM(F5:F16,F25:F36)<>0,1,0)+IF(SUM(G5:G16,G25:G36)<>0,1,0)+IF(SUM(H5:H16,H25:H36)<>0,1,0)+IF(SUM(I5:I16,I25:I36)<>0,1,0))"
             self.set_cell(ws, 'B' + str(i_offset+19), "teilen durch Monate", b_bold=True, align='right')

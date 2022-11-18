@@ -18,8 +18,8 @@ versionInfo = VSVersionInfo(
     ffi=FixedFileInfo(
         # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
         # Set not needed items to zero 0.
-        filevers=(sv.I_VERSION_NUM_1, sv.I_VERSION_NUM_2, sv.I_VERSION_NUM_3, sv.I_VERSION_NUM_4),
-        prodvers=(sv.I_VERSION_NUM_1, sv.I_VERSION_NUM_2, sv.I_VERSION_NUM_3, sv.I_VERSION_NUM_4),
+        filevers=(sv.I_VERSION_MAJOR, sv.I_VERSION_MINOR, sv.I_VERSION_PATCH, sv.I_VERSION_BUILD),
+        prodvers=(sv.I_VERSION_MAJOR, sv.I_VERSION_MINOR, sv.I_VERSION_PATCH, sv.I_VERSION_BUILD),
         # Contains a bitmask that specifies the Boolean attributes of the file
         mask=0x0,
         # Contains a bitmask that specifies the Boolean attributes of the file.
