@@ -261,6 +261,14 @@ class DoxygenCreator():
                         file.write(s_corner_text + "\n")
                     if s_icon_text is not None:
                         file.write(s_icon_text + "\n")
+    
+    def add_nojekyll_file(self):
+        """!
+        @brief Add .nojekyll file that files with underscores visible
+        """
+        s_file_name = ".nojekyll"
+        with open(f"{self.s_output_dir}html/{s_file_name}", 'w') as file:
+            file.write('')
 
     def run_doxygen(self, b_open_doxygen_output = True):
         """!
@@ -271,6 +279,7 @@ class DoxygenCreator():
         self.edit_select_doxyfile_settings()
         self.generate_doxygen_output(b_open_doxygen_output)
         self.add_github_corner()
+        self.add_nojekyll_file()
         b_warnings = self.check_doxygen_warnings(b_open_doxygen_output)
         return b_warnings
 

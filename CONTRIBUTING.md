@@ -70,4 +70,4 @@ Die Generierung der EXE wird mithilfe des `pyinstaller` gemacht. In der Datei `E
 
 ### Freigabe
 
-* [ ] Nach Merge in master: Commit taggen (z.B `WJH-SV - 1.0.0.0` & Release erstellen mit Links auf Executable in Package Registry
+* [ ] Nach Merge in master: Commit taggen (z.B `WJH-SV - 1.0.0` & Release erstellen mit Links auf Executable in Package Registry

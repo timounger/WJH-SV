@@ -13,7 +13,7 @@ Das Tool erzeugt die Dokumente für die Rückerstattung der Sozialversicherungsb
 
 ## Ausführen 🚀
 
-Es handelt sich sich hierbei um ein Kommandozeilentool. Die Parameter sind beim Tool Aufruf beschrieben.
+Es handelt sich hierbei um ein Kommandozeilentool. Die Parameter sind beim Tool Aufruf beschrieben.
 
 Für das Ausführen der Executable kann einfachheithalber eine Batch Datei (z.B. `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt werden.
 
@@ -48,7 +48,7 @@ Die Ausgabe der Excel Dokumente (`.xlsx`) erfolgt in dem Ordner `Output`. In die
 
 ## Verarbeitungslogik 🔃
 
-Ab folgendem Tag des vorherigen Monats erfolgt die Buchung für den nächsten Monat:
+Ab folgendem Tag erfolgt die Buchung für den nächsten Monat:
 
 * Januar: ab 22.12
 * Juli: ab 23.06
