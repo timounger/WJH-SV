@@ -1,6 +1,6 @@
 \page CHANGELOG Changelog
 
-[[_TOC_]]
+\tableofcontents
 
 # WJH-SV changelog 📋️
 
@@ -8,10 +8,11 @@
 
 * Fix: Beträge werden korrekt den Monaten zugeordnet und addiert
 * Die monatliche Erstattung durch LRA wird durch eine Formel berechnet
-* Zuschussbrechung mit unterschiedlichen Prozentsätzen möglichen (aufklappen wenn benötigt)
+* Zuschussbrechung mit unterschiedlichen Prozentsätzen möglich (aufklappen wenn benötigt)
 * Kinder mit leeren Einträgen werden nicht aufgelistet
 * EK-Berechnung (1. HJ) als aktive Seite (wird beim Öffnen gezeigt)
-* Text Ausgabe in Kommandozeiel bei Verwendung der Executable
+* Text Ausgabe in Kommandozeile bei Verwendung der Executable
+* Text und Formatierungsfehler behoben
 
 ## [v1.0.0]
 
