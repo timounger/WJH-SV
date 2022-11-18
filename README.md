@@ -15,7 +15,7 @@ Das Tool erzeugt die Dokumente für die Rückerstattung der Sozialversicherungsb
 
 Es handelt sich sich hierbei um ein Kommandozeilentool. Die Parameter sind beim Tool Aufruf beschrieben.
 
-Für das Ausführen der Executable kann einfachheithalber eine Batch Datei (z.B `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt werden.
+Für das Ausführen der Executable kann einfachheithalber eine Batch Datei (z.B. `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt werden.
 
 Inhalt der Batch Datei z.B.
 
