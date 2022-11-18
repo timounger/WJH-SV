@@ -1,6 +1,6 @@
 \page CHANGELOG Changelog
 
-\tableofcontents
+[TOC]
 
 # WJH-SV changelog 📋️
 

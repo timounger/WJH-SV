@@ -1,6 +1,6 @@
 \page CONTRIBUTING Contributing
 
-\tableofcontents
+[TOC]
 
 ## Architektur 🏭️
 
