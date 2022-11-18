@@ -40,7 +40,7 @@ Folgende Eigenschaften müssen die Inhalte der Datei aufweisen:
 * Spalte I: Wohnort des Kindes
 * Spalte M: Buchungsdatum
 * Spalte N: `Bezeichnung`  - Ausgezahlter Betrag oder Abzüge an den Betreuer
-* Spalte Q: Vermerk für spezielle Betreuung z.B Vertretung
+* Spalte Q: Vermerk für spezielle Betreuung z.B. Vertretung
 
 ## Ausgangsdaten ➡️
 

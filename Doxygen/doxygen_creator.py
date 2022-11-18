@@ -163,8 +163,8 @@ class DoxygenCreator():
         
         # Server side searching with external indexing
         configuration['SEARCHENGINE'] = YES
-        configuration['SERVER_BASED_SEARCH'] = YES
-        #configuration['EXTERNAL_SEARCH'] = YES
+        configuration['SERVER_BASED_SEARCH'] = NO
+        configuration['EXTERNAL_SEARCH'] = NO
 
         # required settings for the style template (do not change)
         configuration['GENERATE_TREEVIEW'] = YES
