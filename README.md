@@ -15,7 +15,7 @@ Das Tool erzeugt die Dokumente für die Rückerstattung der Sozialversicherungsb
 
 Es handelt sich hierbei um ein Kommandozeilentool. Die Parameter sind beim Tool Aufruf beschrieben.
 
-Für das Ausführen der Executable kann einfachheithalber eine Batch Datei (z.B. `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt werden.
+Für das Ausführen der Executable kann vereinfacht eine Batch Datei (z.B. `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt werden.
 
 Inhalt der Batch Datei z.B.
 
@@ -39,8 +39,8 @@ Folgende Eigenschaften müssen die Inhalte der Datei aufweisen:
 * Spalte H: Vorname des Kindes
 * Spalte I: Wohnort des Kindes
 * Spalte M: Buchungsdatum
-* Spalte N: `Bezeichnung`  - Ausgezahlter Betrag oder Abzüge an den Betreuer
-* Spalte Q: Vermerk für spezielle Betreuung z.B. Vertretung
+* Spalte N: Ausgezahlter Betrag oder Abzüge an den Betreuer
+* Spalte Q: `Bezeichnung` - Vermerk für spezielle Betreuung z.B. Vertretung
 
 ## Ausgangsdaten ➡️
 

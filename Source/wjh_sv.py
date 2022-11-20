@@ -74,7 +74,6 @@ L_SECOND_TABLE_KEYS = ["außergewöhnlich", "Vertretung", "erhöhter Förderbeda
 
 S_FIRST_TABLE_DICT = "normal"
 S_SECOND_TABLE_DICT = "special"
-D_EMPTY_USER_DATA = {S_FIRST_TABLE_DICT: {}, S_SECOND_TABLE_DICT: {}}
 
 L_MONTH_NAME = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 
@@ -133,6 +132,10 @@ I_HALF_MONTH_YEAR = 6
 I_MONTH_COLUMN_OFFSET = 4
 I_MAX_CHILDS = 12
 I_CHILD_OFFSET = 5
+I_SUBSIDY_KV_TABLE_OFFSET = 11
+I_SUBSIDY_AV_TABLE_OFFSET = 10
+I_SUBSIDY_AV_TABLE_OFFSET_ABSOLUTE = 58
+
 
 THIN_BORDER = Border(left=Side(style='thin'),
                      right=Side(style='thin'),
@@ -317,7 +320,7 @@ class SubsidyCalculator():
         @param s_first_name : first name of user
         @return dictionary with relevant data of user
         """
-        d_data = D_EMPTY_USER_DATA
+        d_data = {S_FIRST_TABLE_DICT: {}, S_SECOND_TABLE_DICT: {}}
         for entry in l_table:
             i_entry_year = entry[Buchungsdatum].year
             i_entry_month = entry[Buchungsdatum].month
@@ -481,7 +484,7 @@ class SubsidyCalculator():
         ws.merge_cells(start_row=i_offset+18, start_column=i_merge_start, end_row=i_offset+18, end_column=9)
         self.set_cell(ws, f'J{i_offset+18}', f'=SUM(J{i_offset+I_CHILD_OFFSET}:J{i_offset+I_CHILD_OFFSET+I_MAX_CHILDS-1})', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT)
         if b_normal_table:
-            s_month_count_formula = "=SUM(IF(SUM(D5:D16,D25:D36)<>0,1,0)+IF(SUM(E5:E16,E25:E36)<>0,1,0)+IF(SUM(F5:F16,F25:F36)<>0,1,0)+IF(SUM(G5:G16,G25:G36)<>0,1,0)+IF(SUM(H5:H16,H25:H36)<>0,1,0)+IF(SUM(I5:I16,I25:I36)<>0,1,0))"
+            s_month_count_formula = "=SUM(IF(SUM(D5:D16,D25:D36)>0,1,0)+IF(SUM(E5:E16,E25:E36)>0,1,0)+IF(SUM(F5:F16,F25:F36)>0,1,0)+IF(SUM(G5:G16,G25:G36)>0,1,0)+IF(SUM(H5:H16,H25:H36)>0,1,0)+IF(SUM(I5:I16,I25:I36)>0,1,0))"
             self.set_cell(ws, f'B{i_offset+19}', "teilen durch Monate", b_bold=True, align='right')
             self.set_cell(ws, 'C19', s_month_count_formula, b_bold=True, fill_color=COLOR_LIGHTGREEN)
             self.set_cell(ws, 'E19', '←')
@@ -514,9 +517,9 @@ class SubsidyCalculator():
         else:
             s_ek_name = S_SHEET_EK_2HJ
             i_part_year = 2
-        self.set_cell(ws, 'A1', f"Berechnung für Kranken- und Pflegeversicherung (KV, PV) - {i_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
+        self.set_cell(ws, 'A1', f"Berechnung für Kranken- und Pflegeversicherung (KV, PV) - {i_part_year}. Halbjahr {i_year}", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
-        i_table_offset = 11
+        i_table_offset = I_SUBSIDY_KV_TABLE_OFFSET
         i_start_offset = 2
         i_offset = 0
         self.create_subsidy_kp_part(ws, i_year, s_ek_name, i_offset)
@@ -542,10 +545,10 @@ class SubsidyCalculator():
         for i, s_text in enumerate(l_text):
             self.set_cell(ws, f'A{17+i+i_offset}', s_text, i_font_size=10)
 
-        self.set_cell(ws, f'A{25+i_offset}', f"Berechnung für Altersvorsorge (AV) - {i_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
+        self.set_cell(ws, f'A{25+i_offset}', f"Berechnung für Altersvorsorge (AV) - {i_part_year}. Halbjahr {i_year}", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
         ws.merge_cells(start_row=(25+i_offset), start_column=1, end_row=(25+i_offset), end_column=5)
-        i_table_offset = 10
-        i_start_offset = 58
+        i_table_offset = I_SUBSIDY_AV_TABLE_OFFSET
+        i_start_offset = I_SUBSIDY_AV_TABLE_OFFSET_ABSOLUTE
         self.create_subsidy_av_part(ws, i_year, s_ek_name, i_offset)
         i_offset += i_table_offset
         self.create_subsidy_av_part(ws, i_year, s_ek_name, i_offset)
@@ -570,11 +573,12 @@ class SubsidyCalculator():
         self.set_cell(ws, f'A{46+i_offset}', "Unfallversicherung (UV)", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
         ws.merge_cells(start_row=46+i_offset, start_column=1, end_row=46+i_offset, end_column=5)
         self.set_cell(ws, f'B{48+i_offset}', "Jahr:", align='right', i_font_size = 10)
-        self.set_cell(ws, f'C{48+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
+        self.set_cell(ws, f'C{48+i_offset}', i_year-1, fill_color=COLOR_GREY, i_font_size = 10) # UV is for year before
         self.set_cell(ws, f'B{50+i_offset}', "Betrag:", align='right', i_font_size = 10)
         self.set_cell(ws, f'C{50+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
+        ws.row_dimensions.group(88, 94, hidden=not b_first_half_year, outline_level=1)
 
-        self.set_cell(ws, f'A{53+i_offset}', f"Erstattung {i_part_year}. Halbjahr:", b_bold=True, b_italic=True, b_underline=True, i_font_size = 14, fill_color=COLOR_GREY)
+        self.set_cell(ws, f'A{53+i_offset}', f"Erstattung {i_part_year}. Halbjahr {i_year}:", b_bold=True, b_italic=True, b_underline=True, i_font_size = 14, fill_color=COLOR_GREY)
         self.set_cell(ws, f'B{53+i_offset}', fill_color=COLOR_GREY, b_bold=True, b_italic=True, i_font_size = 14)
         self.set_cell(ws, f'C{53+i_offset}', "=B36+B79+C92", b_bold=True, b_italic=True, b_underline=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 14)
         self.set_cell(ws, f'D{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
@@ -596,7 +600,7 @@ class SubsidyCalculator():
         self.set_cell(ws, f'A{6+i_offset}', "steuerpflichtiges Einkommen aus TP(1):", align='right', i_font_size = 10)
         self.set_cell(ws, f'B{6+i_offset}', f"=IF(B{4+i_offset}{S_PERCENT_CONDITION}, B{5+i_offset}*{S_PERCENT_1}, B{5+i_offset}*{S_PERCENT_2})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, f'A{7+i_offset}', "zu berücksichtigendes Einkommen aus TP(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, f'B{7+i_offset}', f"='{s_ek_name}'!J41", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'B{7+i_offset}', f"=B{6+i_offset}+'{s_ek_name}'!J39", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
 
         self.set_cell(ws, f'C{4+i_offset}', "KV =", align='right', i_font_size = 10)
         self.set_cell(ws, f'D{4+i_offset}', F_KV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
@@ -614,9 +618,15 @@ class SubsidyCalculator():
         self.set_cell(ws, f'A{9+i_offset}', "aus Beitragsbescheid Krankenkasse:", align='right', i_font_size = 10)
         self.set_cell(ws, f'B{9+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
         self.set_cell(ws, f'A{10+i_offset}', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
-        self.set_cell(ws, f'B{10+i_offset}', f"=IF(AND(B{6+i_offset}>={F_MIN_REFUND},B{6+i_offset}<={F_MAX_REFUND}),MIN({F_MIN_PAY}/2,B{9+i_offset}/2),IF(B{9+i_offset}>D{7+i_offset},D{7+i_offset}/2,B{9+i_offset}/2))", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'B{10+i_offset}', f"=IF(AND(B{7+i_offset}>={F_MIN_REFUND},B{7+i_offset}<={F_MAX_REFUND}),MIN({F_MIN_PAY}/2,B{9+i_offset}/2),IF(B{9+i_offset}>D{7+i_offset},D{7+i_offset}/2,B{9+i_offset}/2))", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, f'C{10+i_offset}', "Anzahl Monate:", align='right', i_font_size = 10)
-        self.set_cell(ws, f'D{10+i_offset}', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
+        if i_offset == 0:
+            s_forumla = f"='{s_ek_name}'!C19"
+        elif i_offset == I_SUBSIDY_KV_TABLE_OFFSET:
+            s_forumla = f"='{s_ek_name}'!C19-D10"
+        else:
+            s_forumla = f"='{s_ek_name}'!C19-D10-D{10+I_SUBSIDY_KV_TABLE_OFFSET}"
+        self.set_cell(ws, f'D{10+i_offset}', s_forumla, fill_color=COLOR_GREY, i_font_size = 10)
         self.set_cell(ws, f'A{11+i_offset}', "davon für KV:", align='right', i_font_size = 10)
         self.set_cell(ws, f'B{11+i_offset}', f"=B{10+i_offset}/(D{4+i_offset}+D{5+i_offset}+D{6+i_offset})*(D{4+i_offset}+D{6+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
         self.set_cell(ws, f'A{12+i_offset}', "davon für PV:", align='right', i_font_size = 10)
@@ -641,7 +651,7 @@ class SubsidyCalculator():
         self.set_cell(ws, f'B{31+i_offset}', f"=IF(B{28+i_offset}{S_PERCENT_CONDITION}, B{30+i_offset}*{S_PERCENT_1}, B{30+i_offset}*{S_PERCENT_2})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
 
         self.set_cell(ws, f'A{32+i_offset}', "zu berücksichtigendes Einkommen(1):", align='right', i_font_size = 10)
-        self.set_cell(ws, f'B{32+i_offset}', f"=(('{s_ek_name}'!J39*D{30+i_offset})+B{30+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
+        self.set_cell(ws, f'B{32+i_offset}', f"=(('{s_ek_name}'!J39*D{30+i_offset})+B{31+i_offset})", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
 
         self.set_cell(ws, f'C{29+i_offset}', "AV =", align='right', i_font_size = 10)
         self.set_cell(ws, f'D{29+i_offset}', F_AV, fill_color=COLOR_GREY, s_format=S_PERCENT_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
@@ -655,7 +665,13 @@ class SubsidyCalculator():
         self.set_cell(ws, f'A{35+i_offset}', "Erstattungsbetrag (mtl.) durch LRA:", align='right', i_font_size = 10)
         self.set_cell(ws, f'B{35+i_offset}', f"=MIN(MAX(IF(B{34+i_offset}>E{29+i_offset},E{29+i_offset}/2,B{34+i_offset}/2),{F_MIN_AV_REFUND}),B{34+i_offset}/2)",fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER) # TODO ausfüllen
         self.set_cell(ws, f'C{35+i_offset}', "Anzahl Monate:", align='right', i_font_size = 10)
-        self.set_cell(ws, f'D{35+i_offset}', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
+        if i_offset == (2 * I_SUBSIDY_KV_TABLE_OFFSET):
+            s_forumla = f"='{s_ek_name}'!C19"
+        elif i_offset == ((2 * I_SUBSIDY_KV_TABLE_OFFSET) + I_SUBSIDY_AV_TABLE_OFFSET):
+            s_forumla = f"='{s_ek_name}'!C19-D{35+i_offset-I_SUBSIDY_AV_TABLE_OFFSET}"
+        else:
+            s_forumla = f"='{s_ek_name}'!C19-D{35+i_offset-(2*I_SUBSIDY_AV_TABLE_OFFSET)}-D{35+i_offset-I_SUBSIDY_AV_TABLE_OFFSET}"
+        self.set_cell(ws, f'D{35+i_offset}', s_forumla, fill_color=COLOR_GREY, i_font_size = 10)
 
     def set_cell(self, ws: Worksheet, s_cell: str, value: any = None, b_bold: bool = False, b_italic: bool = False, b_underline: bool = False, i_font_size: int = 12, s_font: str = 'Arial', fill_color: str = None, align: str = None, s_format: str = None, s_border: Border = None):
         """!
