@@ -657,8 +657,7 @@ class SubsidyCalculator():
         self.set_cell(ws, f'C{35+i_offset}', "Anzahl Monate:", align='right', i_font_size = 10)
         self.set_cell(ws, f'D{35+i_offset}', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
 
-    def set_cell(self, ws: Worksheet, s_cell: str, value = None, b_bold: bool = False, b_italic: bool = False, b_underline = False,\
-                 i_font_size: int = 12, s_font: str = 'Arial', fill_color: str = None, align: str = None, s_format: str = None, s_border: Border = None):
+    def set_cell(self, ws: Worksheet, s_cell: str, value: any = None, b_bold: bool = False, b_italic: bool = False, b_underline: bool = False, i_font_size: int = 12, s_font: str = 'Arial', fill_color: str = None, align: str = None, s_format: str = None, s_border: Border = None):
         """!
         @brief Set cell data
         @param ws : actual worksheet
