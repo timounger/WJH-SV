@@ -3,7 +3,7 @@
 \tableofcontents
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/timounger/WJH-SV)](https://github.com/timounger/WJH-SV/releases/latest)
-[![GitHub](https://img.shields.io/github/license/timounger/WJH-SV)](https://github.com/timounger/WJH-SV/blob/main/LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/timounger/WJH-SV/blob/master/LICENSE.md)
 
 # Wirtschaftliche Jugendhilfe -  Sozialversicherung
 
@@ -13,9 +13,9 @@ Das Tool erzeugt die Dokumente für die Rückerstattung der Sozialversicherungsb
 
 ## Ausführen 🚀
 
-Es handelt sich sich hierbei um ein Kommandozeilentool. Die Parameter sind beim Tool Aufruf beschrieben.
+Es handelt sich hierbei um ein Kommandozeilentool. Die Parameter sind beim Tool Aufruf beschrieben.
 
-Für das Ausführen der Executable kann einfachheithalber eine Batch Datei (z.B `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt und ausgeführt werden.
+Für das Ausführen der Executable kann vereinfacht eine Batch Datei (z.B. `run_WJH-SV.bat`) auf gleicher Ordnerebene erstellt werden.
 
 Inhalt der Batch Datei z.B.
 
@@ -32,23 +32,23 @@ Folgende Eigenschaften müssen die Inhalte der Datei aufweisen:
 
 * Die Tabelleneinträge beginnen ab Zeile 3 bzw. die Spaltenbeschriftung bereits in Zeile 2.
 * Alle folgenden Tabelleneinträge werden gewertet.
-* Die Tabelle darf nicht durch eine leere Zeile unterbrochen sein, da die folgenden EInträge nicht gewertet werden.
+* Die Tabelle darf nicht durch eine leere Zeile unterbrochen sein, da die folgenden Einträge nicht gewertet werden.
 * Spalte A: Nachname des Betreuers
-* Spalte B: Nachname des Betreuers
+* Spalte B: Vorname des Betreuers
 * Spalte G: Nachname des Kindes
 * Spalte H: Vorname des Kindes
 * Spalte I: Wohnort des Kindes
 * Spalte M: Buchungsdatum
-* Spalte N: `Bezeichnung`  - Ausgezahlter Betrag oder Abzüge an den Betreuer
-* Spalte Q: Vermerk für spezielle Betreuer z.B Vertretung
+* Spalte N: Ausgezahlter Betrag oder Abzüge an den Betreuer
+* Spalte Q: `Bezeichnung` - Vermerk für spezielle Betreuung z.B. Vertretung
 
 ## Ausgangsdaten ➡️
 
-Die Ausgabe der Excel Dokumente (`.xlsx`) erfolgt in dem Ordner `Output`. In diesem Ordner wird bei jedem erneuten Ausführen ein Ordner mit dem aktuellen Datum erstellt z.B `SV_Berechnung_YYYY-MM-DD_HHhMMmSSs`.
+Die Ausgabe der Excel Dokumente (`.xlsx`) erfolgt in dem Ordner `Output`. In diesem Ordner wird bei jedem erneuten Ausführen ein Ordner mit dem aktuellen Datum erstellt z.B. `SV_Berechnung_YYYY-MM-DD_HHhMMmSSs`.
 
 ## Verarbeitungslogik 🔃
 
-Ab folgendem Tag des vorherigen Monats erfolgt die Buchung für den nächsten Monat:
+Ab folgendem Tag erfolgt die Buchung für den nächsten Monat:
 
 * Januar: ab 22.12
 * Juli: ab 23.06

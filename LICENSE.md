@@ -7,7 +7,7 @@ A copy of the GNU GPL is appended to this file.
 
 IMPORTANT WJH-SV LICENSE TERMS
 
-_Copyright (C) 2022 Timo Unger_
+_Copyright (c) 2022 Timo Unger_
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -32,7 +32,6 @@ IF %ERRORLEVEL% NEQ 0 (
 								 --exclude-module pygments ^
 								 --name WJH-SV ^
 								 --onefile ^
-								 --noconsole ^
 								 --noupx ^
 								 --distpath bin ^
 								 --workpath %workpath% ^
