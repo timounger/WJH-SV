@@ -12,11 +12,12 @@ import argparse
 from datetime import datetime
 import openpyxl
 from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.styles.borders import Border, Side
 
-B_DEBUG = True
+B_DEBUG = False
 
 # Example and Debug Parameter
 I_YEAR = 2022
@@ -70,8 +71,10 @@ L_DATE_INX = [Buchungsdatum]
 L_FLOAT_INX = [Betrag, Ergebnis]
 
 L_SECOND_TABLE_KEYS = ["außergewöhnlich", "Vertretung", "erhöhter Förderbedarf"]
+
 S_FIRST_TABLE_DICT = "normal"
 S_SECOND_TABLE_DICT = "special"
+D_EMPTY_USER_DATA = {S_FIRST_TABLE_DICT: {}, S_SECOND_TABLE_DICT: {}}
 
 L_MONTH_NAME = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 
@@ -171,11 +174,11 @@ class SubsidyCalculator():
         @brief Run calculation of WJH-SV
         """
         args = self.args_parser()
-        if args is not None or B_DEBUG:
+        if (args is not None) or B_DEBUG:
             if not B_DEBUG:
-                i_year = args.year
-                s_file = args.file
-                s_sheet = args.sheet
+                i_year = args.i_year
+                s_file = args.s_file
+                s_sheet = args.s_sheet
             else:
                 i_year = I_YEAR
                 s_file = S_FILE
@@ -191,30 +194,40 @@ class SubsidyCalculator():
                     if not os.path.exists(s_output_folder):
                         os.makedirs(s_output_folder)
                 for l_user_data in l_user:
-                    #if not B_DEBUG or l_user_data[0] == "Unger" and l_user_data[1] == "Tamara":
                     self.create_report_file(s_output_folder, l_table, i_year, l_user_data[0], l_user_data[1])
                 print("Finished!")
             else:
                 sys.exit(f"File not exist: {s_file}")
 
-    def args_parser(self):
+    def args_parser(self) -> argparse.Namespace:
         """!
         @brief Get script arguments.
         @return all present script arguments; None for no arguments
         """
-        if len( sys.argv ) > 1:
-            my_parser = argparse.ArgumentParser()
-            required_args = my_parser.add_argument_group('required named arguments')
-            required_args.add_argument('--year', type=int, help=f'Year of calculation (e.g. {I_YEAR})')
-            required_args.add_argument('--file', type=str, help=f'file with input data (e.g. {S_FILE})')
-            required_args.add_argument('--sheet', type=str, help=f'sheet name of file with input data (e.g. {S_SHEET})')
-            args = my_parser.parse_args()
-        else:
+        o_parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
+
+        required_args = o_parser.add_argument_group('required arguments')
+        required_args.add_argument('-y','--year',
+                                   dest = 'i_year',
+                                   type = int,
+                                   help = f'Year of calculation (e.g. {I_YEAR})')
+        required_args.add_argument('-f', '--file',
+                                   dest = 's_file',
+                                   type = str,
+                                   help = f'file with input data (e.g. {S_FILE})')
+        required_args.add_argument('-s', '--sheet',
+                                   dest = 's_sheet',
+                                   type = str,
+                                   help = f'sheet name of file with input data (e.g. {S_SHEET})')
+        args = o_parser.parse_args()
+
+        if None in [args.i_year, args.s_file, args.s_sheet]:
             print("Arguments missing. Use --help for more details.")
             args = None
+
         return args
 
-    def get_table_data(self, s_file, s_sheet):
+    def get_table_data(self, s_file: str, s_sheet: str) -> list:
         """!
         @brief get all data from input file.
         @param s_file : input file name
@@ -249,7 +262,7 @@ class SubsidyCalculator():
                     break
         return l_table
 
-    def get_user(self, l_table):
+    def get_user(self, l_table: list) -> list:
         """!
         @brief Get list of user in input file
         @param l_table : list with all data from input file
@@ -262,7 +275,7 @@ class SubsidyCalculator():
                 l_user.append(l_user_name)
         return l_user
 
-    def create_report_file(self, s_output_folder, l_table, i_year, s_name, s_first_name):
+    def create_report_file(self, s_output_folder: str, l_table: list, i_year: int, s_name: str, s_first_name: str):
         """!
         @brief Create report file of an user
         @param s_output_folder : output folder
@@ -272,27 +285,30 @@ class SubsidyCalculator():
         @param s_first_name : first name of user
         """
         d_data = self.calculate_ek(l_table, i_year, s_name, s_first_name)
-        workbook = Workbook()
-        # sheet with calculation 1.HJ
-        ws_ek_1 = workbook.active
-        ws_ek_1.title = S_SHEET_EK_1HJ
-        self.create_calculation_sheet(ws_ek_1, d_data, i_year, s_name, s_first_name, True)
-        # sheet with calculation 2.HJ
-        ws_ek_2 = workbook.create_sheet(S_SHEET_EK_2HJ)
-        self.create_calculation_sheet(ws_ek_2, d_data, i_year, s_name, s_first_name, False)
-        # sheet with subsidy 1.HJ
-        ws_zu_1 = workbook.create_sheet(S_SHEET_ZU_1HJ)
-        self.create_subsidy_sheet(ws_zu_1, i_year, True)
-        #workbook.active = workbook[S_SHEET_ZU_1HJ]
-        # sheet with subsidy 2.HJ
-        ws_zu_2 = workbook.create_sheet(S_SHEET_ZU_2HJ)
-        self.create_subsidy_sheet(ws_zu_2, i_year, False)
-        # save file
-        s_file_name = f"{s_output_folder}/SV_Berechnung_{i_year}_{s_name}_{s_first_name}.xlsx"
-        workbook.save(filename = s_file_name)
-        print(f"Created: {s_file_name}")
+        if d_data[S_FIRST_TABLE_DICT] or d_data[S_SECOND_TABLE_DICT]:
+            workbook = Workbook()
+            # sheet with calculation 1.HJ
+            ws_ek_1 = workbook.active
+            ws_ek_1.title = S_SHEET_EK_1HJ
+            self.create_calculation_sheet(ws_ek_1, d_data, i_year, s_name, s_first_name, True)
+            # sheet with calculation 2.HJ
+            ws_ek_2 = workbook.create_sheet(S_SHEET_EK_2HJ)
+            self.create_calculation_sheet(ws_ek_2, d_data, i_year, s_name, s_first_name, False)
+            # sheet with subsidy 1.HJ
+            ws_zu_1 = workbook.create_sheet(S_SHEET_ZU_1HJ)
+            self.create_subsidy_sheet(ws_zu_1, i_year, True)
+            #workbook.active = workbook[S_SHEET_ZU_1HJ]
+            # sheet with subsidy 2.HJ
+            ws_zu_2 = workbook.create_sheet(S_SHEET_ZU_2HJ)
+            self.create_subsidy_sheet(ws_zu_2, i_year, False)
+            # save file
+            s_file_name = f"{s_output_folder}/SV_Berechnung_{i_year}_{s_name}_{s_first_name}.xlsx"
+            workbook.save(filename = s_file_name)
+            print(f"Created: {s_file_name}")
+        else:
+            print(f"No data for {s_name}, {s_first_name} in {i_year}")
 
-    def calculate_ek(self, l_table, i_year, s_name, s_first_name):
+    def calculate_ek(self, l_table: list, i_year: int, s_name: str, s_first_name: str) -> dict:
         """!
         @brief Create report file of an user
         @param l_table : data from input file
@@ -301,7 +317,7 @@ class SubsidyCalculator():
         @param s_first_name : first name of user
         @return dictionary with relevant data of user
         """
-        d_data = {S_FIRST_TABLE_DICT: {}, S_SECOND_TABLE_DICT: {}}
+        d_data = D_EMPTY_USER_DATA
         for entry in l_table:
             i_entry_year = entry[Buchungsdatum].year
             i_entry_month = entry[Buchungsdatum].month
@@ -328,7 +344,7 @@ class SubsidyCalculator():
                     d_data[s_table_part][s_child][i_real_month] += entry[Betrag]
         return d_data
 
-    def create_calculation_sheet(self, ws, d_data, i_year, s_name, s_first_name, b_first_half_year = True):
+    def create_calculation_sheet(self, ws: Worksheet, d_data: dict, i_year: int, s_name: str, s_first_name: str, b_first_half_year: bool = True):
         """!
         @brief Create calculation sheet
         @param ws : actual worksheet
@@ -352,7 +368,7 @@ class SubsidyCalculator():
         self.create_calculation_table(ws, d_data, b_first_half_year, False)
         self.create_calculation_sum(ws, b_first_half_year, False)
 
-    def create_calculation_header(self, ws, i_year, s_name, s_first_name):
+    def create_calculation_header(self, ws: Worksheet, i_year: int, s_name: str, s_first_name: str):
         """!
         @brief Create header in calculation sheet
         @param ws : actual worksheet
@@ -366,7 +382,7 @@ class SubsidyCalculator():
         self.set_cell(ws, 'F1', "Jahr", b_bold=True)
         self.set_cell(ws, 'G1', i_year, b_bold=True, align='left', fill_color=COLOR_LIGHTGREEN)
 
-    def create_calculation_table(self, ws, d_data, b_first_half_year = True, b_normal_table = True):
+    def create_calculation_table(self, ws: Worksheet, d_data: dict, b_first_half_year: bool = True, b_normal_table: bool = True):
         """!
         @brief Create table in calculation sheet
         @param ws : actual worksheet
@@ -388,9 +404,9 @@ class SubsidyCalculator():
             s_table_part = S_SECOND_TABLE_DICT
         for i_month in range(I_HALF_MONTH_YEAR):
             self.set_cell(ws, get_column_letter(i_month + I_MONTH_COLUMN_OFFSET) + str(i_offset+3), L_MONTH_NAME[i_year_offset+i_month], b_bold=True, align='center')
-        self.set_cell(ws, 'J' + str(i_offset+3), "Gesamt", b_bold=True, align='center')
-        self.set_cell(ws, 'A' + str(i_offset+4), "Betreute Kinder", b_bold=True)
-        self.set_cell(ws, 'B' + str(i_offset+4), "Wohnort", b_bold=True)
+        self.set_cell(ws, f'J{i_offset+3}', "Gesamt", b_bold=True, align='center')
+        self.set_cell(ws, f'A{i_offset+4}', "Betreute Kinder", b_bold=True)
+        self.set_cell(ws, f'B{i_offset+4}', "Wohnort", b_bold=True)
         d_filtered_user_data = {}
         for i, s_child in enumerate(d_data[s_table_part]): # filter to sort out user only for other half year
             if any(key in d_data[s_table_part][s_child] for key in l_valid_months):
@@ -399,9 +415,9 @@ class SubsidyCalculator():
         for i, s_child in enumerate(d_filtered_user_data):
             i_row = i
             i_index = s_child.rfind(',')
-            self.set_cell(ws, 'A' + str(i_offset+I_CHILD_OFFSET+i), s_child[:i_index], fill_color=COLOR_LIGHTGREEN)
-            self.set_cell(ws, 'B' + str(i_offset+I_CHILD_OFFSET+i), s_child[i_index + 2:], fill_color=COLOR_LIGHTBLUE)
-            self.set_cell(ws, 'C' + str(i_offset+I_CHILD_OFFSET+i), fill_color=COLOR_GREY)
+            self.set_cell(ws, f'A{i_offset+I_CHILD_OFFSET+i}', s_child[:i_index], fill_color=COLOR_LIGHTGREEN)
+            self.set_cell(ws, f'B{i_offset+I_CHILD_OFFSET+i}', s_child[i_index + 2:], fill_color=COLOR_LIGHTBLUE)
+            self.set_cell(ws, f'C{i_offset+I_CHILD_OFFSET+i}', fill_color=COLOR_GREY)
             for i_month in range(I_HALF_MONTH_YEAR):
                 i_real_month = i_year_offset + i_month + 1
                 if i_real_month in d_filtered_user_data[s_child]:
@@ -416,9 +432,9 @@ class SubsidyCalculator():
         else:
             s_start_row = i_row
         for i in range(s_start_row, I_MAX_CHILDS):
-            self.set_cell(ws, 'A' + str(i_offset+I_CHILD_OFFSET+i), fill_color=COLOR_LIGHTGREEN)
-            self.set_cell(ws, 'B' + str(i_offset+I_CHILD_OFFSET+i), fill_color=COLOR_LIGHTBLUE)
-            self.set_cell(ws, 'C' + str(i_offset+I_CHILD_OFFSET+i), fill_color=COLOR_GREY)
+            self.set_cell(ws, f'A{i_offset+I_CHILD_OFFSET+i}', fill_color=COLOR_LIGHTGREEN)
+            self.set_cell(ws, f'B{i_offset+I_CHILD_OFFSET+i}', fill_color=COLOR_LIGHTBLUE)
+            self.set_cell(ws, f'C{i_offset+I_CHILD_OFFSET+i}', fill_color=COLOR_GREY)
             for i_month in range(I_HALF_MONTH_YEAR):
                 s_cell = get_column_letter(i_month + I_MONTH_COLUMN_OFFSET) + str(i_offset+I_CHILD_OFFSET+i)
                 self.set_cell(ws, s_cell, 0.00, fill_color=COLOR_LIGHTORANGE, s_format=S_EUR_FORMAT)
@@ -432,7 +448,7 @@ class SubsidyCalculator():
                 s_cell = get_column_letter(i_colum + 1) + str(i_offset+3+i_row)
                 ws[s_cell].border = THIN_BORDER
 
-    def create_calculation_sum(self, ws, b_first_half_year, b_normal_table = True):
+    def create_calculation_sum(self, ws: Worksheet, b_first_half_year: bool, b_normal_table: bool = True):
         """!
         @brief Create sum in calculation sheet
         @param ws : actual worksheet
@@ -440,12 +456,12 @@ class SubsidyCalculator():
         @param b_normal_table : [True] normal table; [False] special table
         """
         if b_first_half_year:
-            s_part_year = "1"
+            i_part_year = 1
         else:
-            s_part_year = "2"
+            i_part_year = 2
         if b_normal_table:
             i_offset = I_TABLE_OFFSET_TOP
-            s_text_1 = f'Gesamtsumme Pflegegeld {b_first_half_year}. Halbjahr ='
+            s_text_1 = f'Gesamtsumme Pflegegeld {i_part_year}. Halbjahr ='
             s_text_2 = 'durchschnittliches reguläres Pflegegeld mtl. ='
             s_text_3 = 'steuerpflichtiges Einkommen ='
             s_formula = f'=IF(G1{S_PERCENT_CONDITION}, J19*{S_PERCENT_1}, J19*{S_PERCENT_2})'
@@ -454,7 +470,7 @@ class SubsidyCalculator():
             border = DOUBLE_UNDERLINED_BORDER
         else:
             i_offset = I_TABLE_OFFSET_BOTTOM
-            s_text_1 = f'Gesamtsumme erhöhter Förderbedarf/Vertretung/außergewöhnliche Betreuungszeiten {b_first_half_year}. Halbjahr ='
+            s_text_1 = f'Gesamtsumme erhöhter Förderbedarf/Vertretung/außergewöhnliche Betreuungszeiten {i_part_year}. Halbjahr ='
             s_text_2 = 'durchschnittliches zusätzliches Pflegegeld mtl. ='
             s_text_3 = 'zu berücksichtigendes Einkommen = '
             s_formula = '=J39+J21'
@@ -463,20 +479,20 @@ class SubsidyCalculator():
             border = DOUBLE_BORDER
         self.set_cell(ws, s_column + str(i_offset+18), s_text_1, b_bold=True, align='right')
         ws.merge_cells(start_row=i_offset+18, start_column=i_merge_start, end_row=i_offset+18, end_column=9)
-        self.set_cell(ws, 'J' + str(i_offset+18), f'=SUM(J{i_offset+I_CHILD_OFFSET}:J{i_offset+I_CHILD_OFFSET+I_MAX_CHILDS-1})', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT)
+        self.set_cell(ws, f'J{i_offset+18}', f'=SUM(J{i_offset+I_CHILD_OFFSET}:J{i_offset+I_CHILD_OFFSET+I_MAX_CHILDS-1})', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT)
         if b_normal_table:
             s_month_count_formula = "=SUM(IF(SUM(D5:D16,D25:D36)<>0,1,0)+IF(SUM(E5:E16,E25:E36)<>0,1,0)+IF(SUM(F5:F16,F25:F36)<>0,1,0)+IF(SUM(G5:G16,G25:G36)<>0,1,0)+IF(SUM(H5:H16,H25:H36)<>0,1,0)+IF(SUM(I5:I16,I25:I36)<>0,1,0))"
-            self.set_cell(ws, 'B' + str(i_offset+19), "teilen durch Monate", b_bold=True, align='right')
+            self.set_cell(ws, f'B{i_offset+19}', "teilen durch Monate", b_bold=True, align='right')
             self.set_cell(ws, 'C19', s_month_count_formula, b_bold=True, fill_color=COLOR_LIGHTGREEN)
             self.set_cell(ws, 'E19', '←')
         self.set_cell(ws, s_column + str(i_offset+19), s_text_2, b_bold=True, align='right')
         ws.merge_cells(start_row=i_offset+19, start_column=i_merge_start, end_row=i_offset+19, end_column=9)
-        self.set_cell(ws, 'J' + str(i_offset+19), f'=IFERROR(J{str(i_offset+18)}/C19, 0)', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT, s_border=DOUBLE_UNDERLINED_BORDER)
-        self.set_cell(ws, 'F' + str(i_offset+21), s_text_3, b_bold=True, align='right')
+        self.set_cell(ws, f'J{i_offset+19}', f'=IFERROR(J{str(i_offset+18)}/C19, 0)', b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT, s_border=DOUBLE_UNDERLINED_BORDER)
+        self.set_cell(ws, f'F{i_offset+21}', s_text_3, b_bold=True, align='right')
         ws.merge_cells(start_row=i_offset+21, start_column=6, end_row=i_offset+21, end_column=9)
-        self.set_cell(ws, 'J' + str(i_offset+21), s_formula, b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT, s_border=border)
+        self.set_cell(ws, f'J{i_offset+21}', s_formula, b_bold=True, fill_color=COLOR_LIGHTBLUE, s_format=S_EUR_FORMAT, s_border=border)
 
-    def create_subsidy_sheet(self, ws, i_year, b_first_half_year = True):
+    def create_subsidy_sheet(self, ws: Worksheet, i_year: int, b_first_half_year: bool = True):
         """!
         @brief Create subsidy sheet
         @param ws : actual worksheet
@@ -494,11 +510,11 @@ class SubsidyCalculator():
         # set data
         if b_first_half_year:
             s_ek_name = S_SHEET_EK_1HJ
-            s_part_year = "1"
+            i_part_year = 1
         else:
             s_ek_name = S_SHEET_EK_2HJ
-            s_part_year = "2"
-        self.set_cell(ws, 'A1', f"Berechnung für Kranken- und Pflegeversicherung (KV, PV) - {s_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
+            i_part_year = 2
+        self.set_cell(ws, 'A1', f"Berechnung für Kranken- und Pflegeversicherung (KV, PV) - {i_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=5)
         i_table_offset = 11
         i_start_offset = 2
@@ -526,7 +542,7 @@ class SubsidyCalculator():
         for i, s_text in enumerate(l_text):
             self.set_cell(ws, f'A{17+i+i_offset}', s_text, i_font_size=10)
 
-        self.set_cell(ws, f'A{25+i_offset}', f"Berechnung für Altersvorsorge (AV) - {s_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
+        self.set_cell(ws, f'A{25+i_offset}', f"Berechnung für Altersvorsorge (AV) - {i_part_year}. Halbjahr", b_bold=True, b_underline=True, fill_color=COLOR_LIGHTBLUE)
         ws.merge_cells(start_row=(25+i_offset), start_column=1, end_row=(25+i_offset), end_column=5)
         i_table_offset = 10
         i_start_offset = 58
@@ -558,13 +574,13 @@ class SubsidyCalculator():
         self.set_cell(ws, f'B{50+i_offset}', "Betrag:", align='right', i_font_size = 10)
         self.set_cell(ws, f'C{50+i_offset}', fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10) # TODO ausfüllen
 
-        self.set_cell(ws, f'A{53+i_offset}', f"Erstattung {s_part_year}. Halbjahr:", b_bold=True, b_italic=True, b_underline=True, i_font_size = 14, fill_color=COLOR_GREY)
+        self.set_cell(ws, f'A{53+i_offset}', f"Erstattung {i_part_year}. Halbjahr:", b_bold=True, b_italic=True, b_underline=True, i_font_size = 14, fill_color=COLOR_GREY)
         self.set_cell(ws, f'B{53+i_offset}', fill_color=COLOR_GREY, b_bold=True, b_italic=True, i_font_size = 14)
         self.set_cell(ws, f'C{53+i_offset}', "=B36+B79+C92", b_bold=True, b_italic=True, b_underline=True, fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 14)
         self.set_cell(ws, f'D{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
         self.set_cell(ws, f'E{53+i_offset}', b_bold=True, b_italic=True, fill_color=COLOR_GREY, i_font_size = 14)
 
-    def create_subsidy_kp_part(self, ws, i_year, s_ek_name, i_offset):
+    def create_subsidy_kp_part(self, ws: Worksheet, i_year: int, s_ek_name: str, i_offset: int):
         """!
         @brief Create subsidy sheet
         @param ws : actual worksheet
@@ -606,7 +622,7 @@ class SubsidyCalculator():
         self.set_cell(ws, f'A{12+i_offset}', "davon für PV:", align='right', i_font_size = 10)
         self.set_cell(ws, f'B{12+i_offset}', f"=B{10+i_offset}/(D{4+i_offset}+D{6+i_offset}+D{5+i_offset})*D{5+i_offset}", fill_color=COLOR_GREY, s_format=S_EUR_FORMAT, i_font_size = 10, s_border=THIN_BORDER)
 
-    def create_subsidy_av_part(self, ws, i_year, s_ek_name, i_offset):
+    def create_subsidy_av_part(self, ws: Worksheet, i_year: int, s_ek_name: str, i_offset: int):
         """!
         @brief Create subsidy sheet
         @param ws : actual worksheet
@@ -641,7 +657,8 @@ class SubsidyCalculator():
         self.set_cell(ws, f'C{35+i_offset}', "Anzahl Monate:", align='right', i_font_size = 10)
         self.set_cell(ws, f'D{35+i_offset}', f"='{s_ek_name}'!C19", fill_color=COLOR_GREY, i_font_size = 10)
 
-    def set_cell(self, ws, s_cell, value = None, b_bold = False, b_italic=False, b_underline = False, i_font_size = 12, s_font = 'Arial', fill_color = None, align = None, s_format = None, s_border = None):
+    def set_cell(self, ws: Worksheet, s_cell: str, value = None, b_bold: bool = False, b_italic: bool = False, b_underline = False,\
+                 i_font_size: int = 12, s_font: str = 'Arial', fill_color: str = None, align: str = None, s_format: str = None, s_border: Border = None):
         """!
         @brief Set cell data
         @param ws : actual worksheet

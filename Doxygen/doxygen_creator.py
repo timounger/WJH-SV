@@ -58,7 +58,7 @@ S_REPO_LINK = "https://github.com/timounger/WJH-SV"
 
 
 class OpenNotepad(Thread):
-    def __init__(self, s_file):
+    def __init__(self, s_file: str):
         Thread.__init__(self)
         self.s_file = s_file
         self.start()
@@ -73,7 +73,7 @@ class DoxygenCreator():
     @param d_user_settings : induvidual settings so set in Doxyfile
     @param s_webside : webside link for GitHub corner
     """
-    def __init__(self, d_user_settings = [], s_webside = None):
+    def __init__(self, d_user_settings: dict = [], s_webside: str = None):
         self.d_user_settings = d_user_settings
         self.s_webside = s_webside
 
@@ -205,7 +205,7 @@ class DoxygenCreator():
         else:
             print(f"{S_PLANTUML_JAR_NAME} already exist!")
 
-    def check_doxygen_warnings(self, b_open_warning_file = True):
+    def check_doxygen_warnings(self, b_open_warning_file: bool = True) -> bool:
         """!
         @brief Check for doxygen Warnings
         @param b_open_warning_file : [True] open warning file; [False] only check for warnings
@@ -224,7 +224,7 @@ class DoxygenCreator():
 
         return b_warnings
 
-    def generate_doxygen_output(self, b_open_doxygen_output = True):
+    def generate_doxygen_output(self, b_open_doxygen_output: bool = True):
         """!
         @brief Generate Doxygen output depend on existing doxyfile
         @param b_open_doxygen_output : [True] open output in browser; [False] only generate output
@@ -270,7 +270,7 @@ class DoxygenCreator():
         with open(f"{self.s_output_dir}html/{s_file_name}", 'w') as file:
             file.write('')
 
-    def run_doxygen(self, b_open_doxygen_output = True):
+    def run_doxygen(self, b_open_doxygen_output: bool = True):
         """!
         @brief Generate Doxyfile and Doxygen output depend on doxyfile settings
         @param b_open_doxygen_output : [True] open output in browser; [False] only generate output
