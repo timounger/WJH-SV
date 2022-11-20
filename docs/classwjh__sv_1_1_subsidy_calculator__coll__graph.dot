@@ -1,0 +1,8 @@
+digraph "SubsidyCalculator"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="{SubsidyCalculator\n||+ __init__()\l+ args_parser()\l+ calculate_ek()\l+ create_calculation\l_header()\l+ create_calculation\l_sheet()\l+ create_calculation\l_sum()\l+ create_calculation\l_table()\l+ create_report_file()\l+ create_subsidy_av_part()\l+ create_subsidy_kp_part()\l+ create_subsidy_sheet()\l+ get_table_data()\l+ get_user()\l+ run_calculation()\l+ set_cell()\l}",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class SubsidyCalculator: calculate social insurance subsidy for supervisor."];
+}

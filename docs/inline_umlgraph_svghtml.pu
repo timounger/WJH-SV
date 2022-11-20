@@ -1,0 +1,32 @@
+@startuml cdBonPrinterSWComponents.svg
+skinparam titleFontSize 30
+skinparam titleFontStyle bold
+skinparam packageBorderColor black
+skinparam packageFontSize 18
+skinparam groupFontStyle bold
+skinparam componentBorderColor black
+skinparam interfaceBorderColor black
+skinparam CollectionsBorderColor black
+
+title SW components of WJH-SV Tool
+
+node "wjh_sv.png" as icon #yellow
+
+package "WJH-SV" as WJH-SV #ededed {
+  component "**wjh_sv**" as wjh #63d8ff
+  note left of wjh
+    Application entry point
+  end note
+}
+
+node "WJH-SV.exe" as wjh_exe #plum
+
+package "Python Libraries (mostly third party)" #lightgreen {
+ [PyInstaller]
+ [openpyxl]
+}
+
+[wjh] -[#black]r-> [icon]
+[wjh] -[#black]-> [openpyxl]
+[PyInstaller] -[#black]d-> wjh_exe
+@enduml

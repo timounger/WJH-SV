@@ -1,0 +1,9 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="SubsidyCalculator",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classwjh__sv_1_1_subsidy_calculator.html",tooltip="Class SubsidyCalculator: calculate social insurance subsidy for supervisor."];
+}

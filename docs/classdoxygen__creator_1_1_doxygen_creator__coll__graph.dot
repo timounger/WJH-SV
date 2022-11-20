@@ -1,0 +1,8 @@
+digraph "DoxygenCreator"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="{DoxygenCreator\n|+ d_user_settings\l+ s_doxyfile_name\l+ s_output_dir\l+ s_project_name\l+ s_warning_name\l+ s_webside\l|+ __init__()\l+ add_github_corner()\l+ add_nojekyll_file()\l+ check_doxygen_warnings()\l+ create_default_doxyfile()\l+ download_plantuml_jar()\l+ edit_select_doxyfile\l_settings()\l+ generate_doxygen_output()\l+ run_doxygen()\l}",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip="Class to generate Doxygen documentation for and code documentation with uniform settings and style."];
+}
