@@ -32,7 +32,7 @@ Folgende Eigenschaften müssen die Inhalte der Datei aufweisen:
 
 * Die Tabelleneinträge beginnen ab Zeile 3 bzw. die Spaltenbeschriftung bereits in Zeile 2.
 * Alle folgenden Tabelleneinträge werden gewertet.
-* Die Tabelle darf nicht durch eine leere Zeile unterbrochen sein, da die folgenden EInträge nicht gewertet werden.
+* Die Tabelle darf nicht durch eine leere Zeile unterbrochen sein, da die folgenden Einträge nicht gewertet werden.
 * Spalte A: Nachname des Betreuers
 * Spalte B: Vorname des Betreuers
 * Spalte G: Nachname des Kindes
@@ -44,7 +44,7 @@ Folgende Eigenschaften müssen die Inhalte der Datei aufweisen:
 
 ## Ausgangsdaten ➡️
 
-Die Ausgabe der Excel Dokumente (`.xlsx`) erfolgt in dem Ordner `Output`. In diesem Ordner wird bei jedem erneuten Ausführen ein Ordner mit dem aktuellen Datum erstellt z.B `SV_Berechnung_YYYY-MM-DD_HHhMMmSSs`.
+Die Ausgabe der Excel Dokumente (`.xlsx`) erfolgt in dem Ordner `Output`. In diesem Ordner wird bei jedem erneuten Ausführen ein Ordner mit dem aktuellen Datum erstellt z.B. `SV_Berechnung_YYYY-MM-DD_HHhMMmSSs`.
 
 ## Verarbeitungslogik 🔃
 
